@@ -1,0 +1,371 @@
+package com.ibeanssoft.saysomething.adapter;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.androidquery.AQuery;
+import com.androidquery.callback.AjaxStatus;
+import com.androidquery.callback.BitmapAjaxCallback;
+import com.ibeanssoft.saysomething.R;
+import com.ibeanssoft.saysomething.api.MyItem;
+import com.ibeanssoft.saysomething.db.DbAdapter;
+import com.ibeanssoft.saysomething.ui.RecordActivity;
+import com.ibeanssoft.saysomething.util.ThreadUtil;
+
+public class CustomAdapter extends BaseAdapter 
+{
+	private LayoutInflater mInflater;
+	private ArrayList<MyItem> mRowList;
+	private int selectedPosition = -1;	
+	private boolean screenFlag = false;	
+	private boolean bookmarkFlag = false;	
+	private Context mContext;
+	
+	//Image
+	ImageParse imageTask;
+	String pictureUrl = "";
+	
+	public CustomAdapter(Context context, ArrayList<MyItem> rowList)
+	{
+		this.mRowList = rowList;
+		this.mInflater = LayoutInflater.from(context);
+		this.mContext = context;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent)
+	{
+		final ViewHolder holder;
+		if (convertView == null) {
+			convertView = mInflater.inflate(R.layout.row_question, null);
+			holder = new ViewHolder();
+			
+			holder.ivBookmark = (ImageView) convertView.findViewById(R.id.ivBookmark);
+			holder.ivMicrophone = (ImageView) convertView.findViewById(R.id.ivMicrophone);
+			holder.ivPicture = (ImageView) convertView.findViewById(R.id.ivPicture);
+			holder.ivSpeechBalloon = (ImageView) convertView.findViewById(R.id.ivSpeechBalloon);
+			holder.ivPlay = (ImageView) convertView.findViewById(R.id.ivPlay);
+			holder.tvQuestion = (TextView) convertView.findViewById(R.id.tvQuestion);
+			holder.tvTime = (TextView) convertView.findViewById(R.id.tvTime);
+			
+			
+			convertView.setTag(holder);
+			
+		} else {
+			holder = (ViewHolder) convertView.getTag();
+		}
+		
+		
+		holder.tvQuestion.setText(mRowList.get(position).getQuestion() );
+		
+		if(mRowList.get(position).getBookmark()==1){
+			holder.ivBookmark.setImageResource(R.drawable.star);
+		}else{
+			holder.ivBookmark.setImageResource(R.drawable.star_off);
+		}
+		
+		if(mRowList.get(position).getImageUrl().trim().equals("")){
+			holder.ivPicture.setVisibility(View.GONE);
+		}else{
+			holder.ivPicture.setVisibility(View.VISIBLE);
+			//ImageUtil.getImageView(holder.ivPicture, mRowList.get(position).getImageUrl().trim());
+			pictureUrl = mRowList.get(position).getImageUrl().trim();
+
+//			Log.i("CustomAdapter", "#### 111 pictureUrl:"+pictureUrl);
+			
+//			imageTask = new ImageParse();
+//			imageTask.execute(holder);
+			
+			AQuery androidAQuery = new AQuery(convertView);
+		    String imageUrl = mRowList.get(position).getImageUrl().trim();
+
+		    androidAQuery.id(holder.ivPicture).image(imageUrl, true, true, 0, 0, new BitmapAjaxCallback(){
+
+		            @Override
+		            public void callback(String url, ImageView iv, Bitmap bm, AjaxStatus status){
+		                //iv.setImageBitmap(bm);
+		                
+		                iv.getLayoutParams().height = 250;
+		                iv.getLayoutParams().width = 350;
+		                iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+		                iv.setImageBitmap(bm);
+		            }
+		        });	
+		}
+		
+		if(getSoundLength(position) > 0){
+			if (getSoundLength(position)> 1) holder.tvTime.setText(getSoundLength(position) + " seconds");
+			else holder.tvTime.setText(getSoundLength(position) + " second");
+			
+			holder.ivPlay.setAlpha(0.9f);
+//			holder.ivStop.setAlpha(0.9f);
+//			holder.ivTrash.setAlpha(0.9f);
+			holder.ivPlay.setVisibility(View.VISIBLE);
+		}else{
+			holder.tvTime.setText("0 second");
+			
+			holder.ivPlay.setAlpha(0.5f);
+//			holder.ivStop.setAlpha(0.5f);
+//			holder.ivTrash.setAlpha(0.5f);
+			
+			holder.ivPlay.setVisibility(View.GONE);
+		}
+		
+		
+		
+		final int rowId = mRowList.get(position).getRowId();
+		final int positionId = position;
+		
+		holder.ivBookmark.setOnClickListener(new Button.OnClickListener() {
+			 public void onClick(View v) {
+				 	int bookmarkFlag = 0;
+				 	bookmarkFlag = dbSelectQuestionBookmark(rowId);
+				 	//holder.ivBookmark.setImageResource(R.drawable.star);
+				 	//Log.e("msg", "#### bookmarkFlag rowId:"+rowId);
+				 	
+				 	if(bookmarkFlag==0){
+				 		holder.ivBookmark.setImageResource(R.drawable.star);
+				 		bookmarkFlag = 1;
+				 	}else{
+				 		holder.ivBookmark.setImageResource(R.drawable.star_off);
+				 		bookmarkFlag = 0;
+				 	}
+				 	dbQuestionBookmarkUpdate(rowId, bookmarkFlag); 
+				 	//notifyDataSetChanged();
+				 	
+/*					public MyItem(int rowId1, String question, int bookmark, String imageUrl
+							, String soundLocation, String soundLength, String soundDate) */
+						
+				 	MyItem myRowItem = new MyItem(getRowId(positionId)
+							, getQuestion(positionId)
+							, bookmarkFlag
+							, getImageUrl(positionId)
+							, getSoundFileName(positionId)
+							, getSoundLength(positionId)
+							, getSoundDate(positionId)
+							);
+					
+				 	mRowList.set(positionId, myRowItem);
+			 }
+		});	
+		
+		holder.ivMicrophone.setOnClickListener(new Button.OnClickListener() {
+			 public void onClick(View v) {
+				 //Recordding
+				 holder.ivMicrophone.setAlpha(0.3f);
+				 ThreadUtil cmTu = new ThreadUtil(startRecordActivityHandler);
+				 cmTu.commonThread(200);
+			 }
+			 
+			 Handler startRecordActivityHandler=new Handler() {
+					@Override
+					public void handleMessage(Message msg) {
+						holder.ivMicrophone.setAlpha(1.0f);
+						startRecordIntent(positionId, rowId, 0);
+					}
+			};	
+		});	
+
+		
+		holder.ivPlay.setOnClickListener(new Button.OnClickListener() {
+			 public void onClick(View v) {
+				 //Playing
+				 //holder.ivPlay.setAlpha(0.3f);
+				 holder.ivPlay.setAlpha(0.3f);
+				 ThreadUtil cmTu = new ThreadUtil(startRecordActivityHandler);
+				 cmTu.commonThread(200);
+			 }
+			 
+			 Handler startRecordActivityHandler=new Handler() {
+					@Override
+					public void handleMessage(Message msg) {
+						holder.ivPlay.setAlpha(1.0f);
+						startRecordIntent(positionId, rowId, 1);
+					}
+			};			 
+		});		
+		
+		
+		return convertView;
+	}
+
+	@Override
+	public int getCount()
+	{
+		return mRowList.size();
+	}
+
+	@Override
+	public Object getItem(int position)
+	{
+		
+		return mRowList.get(position);
+	}
+	
+	public String getQuestion(int position)
+	{
+		return mRowList.get(position).getQuestion();
+	}	
+	
+	public int getRowId(int position)
+	{
+		return mRowList.get(position).getRowId();
+	}
+	
+	public int getBookmark(int position)
+	{
+		return mRowList.get(position).getBookmark();
+	}		
+	
+	public String getImageUrl(int position)
+	{
+		return mRowList.get(position).getImageUrl();
+	}	
+
+	public String getSoundFileName(int position)
+	{
+		return mRowList.get(position).getSoundFileName();
+	}
+	
+	public int getSoundLength(int position)
+	{
+		return mRowList.get(position).getSoundLength();
+	}
+	
+	public String getSoundDate(int position)
+	{
+		return mRowList.get(position).getSoundDate();
+	}
+	
+	@Override
+	public long getItemId(int position)
+	{
+		return position;
+	}
+	
+	public void setSelected(int position) {
+        selectedPosition = position;
+    }	
+	public int getSelected() {
+        return selectedPosition;
+    }
+	
+
+/*	public void setBookmark(int position, int bookmarkFlag) {
+		MyItem mi = new MyItem(getRowId(position), getQuestion(position), bookmarkFlag);
+		mRowList.set(position, mi);
+    }	*/
+	
+	/****************************
+	 * Local Database
+	 */
+	private int dbSelectQuestionBookmark(int rowId) {
+		int bookmark = 0;
+		DbAdapter mDbAdapter = new DbAdapter(mContext);
+		mDbAdapter.open();	
+		
+		bookmark = mDbAdapter.fetchQuestionBookmark(rowId);
+		mDbAdapter.close();	
+		
+		return bookmark;
+	}
+	
+	private void dbQuestionBookmarkUpdate(int rowId, int bookmark) {
+		DbAdapter mDbAdapter = new DbAdapter(mContext);
+		mDbAdapter.open();	
+		
+		mDbAdapter.updateBookmark(rowId, bookmark);
+		mDbAdapter.close();	
+	}	
+	
+	private static final int ACTIVITY_RECORD_UPDATE = 26079;	
+	
+	private void startRecordIntent(int position, int questionId, int flag) {
+		//Log.i("msg", "### startUpdateIntent");
+		
+		try{
+//			Log.i("msg", "### startUpdateIntent questionId:"+questionId);
+			
+			Intent childIntent = new Intent(mContext, RecordActivity.class);
+		    childIntent.putExtra("questionId", questionId);
+		    childIntent.putExtra("position", position);		
+		    childIntent.putExtra("flag", flag);	
+			((Activity) mContext).startActivityForResult(childIntent, ACTIVITY_RECORD_UPDATE);
+		
+		} catch (Exception e) {
+			Log.e("msg", "#### startUpdateIntent Exception:"+e);
+		}
+		
+	}		
+	private static class ViewHolder {
+		
+		private ImageView ivBookmark, ivMicrophone, ivPicture, ivSpeechBalloon, ivPlay, ivStop, ivTrash;
+		private TextView tvQuestion, tvTime;
+	}	
+	
+	
+	
+	
+	private class ImageParse extends AsyncTask<ViewHolder, String, ViewHolder> {
+	    InputStream is = null;
+	    Bitmap bm = null;
+	    
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+		
+		}
+	    @Override
+	    protected ViewHolder doInBackground(ViewHolder... args) {
+	    	 
+	    	ViewHolder viewHolder = args[0];
+
+	    	try{
+//	    		Log.i("msg", "#### pictureUrl:"+pictureUrl);
+	    		
+		        is = new URL(pictureUrl).openStream();
+		        bm = BitmapFactory.decodeStream(is);
+		        
+		        is.close();   
+		    }catch (Exception e) {
+		    	e.printStackTrace();
+		    }	    	
+	        return viewHolder;
+	    }
+	    @Override
+	    protected void onPostExecute(ViewHolder viewHolder) {	
+	    	
+	    	if(bm!=null){	
+	    		viewHolder.ivPicture.getLayoutParams().height = 250;
+	    		viewHolder.ivPicture.getLayoutParams().width = 350;
+	    		viewHolder.ivPicture.setScaleType(ImageView.ScaleType.CENTER_CROP);
+	    		viewHolder.ivPicture.setImageBitmap(bm);
+	    	}else{
+	    		viewHolder.ivPicture.setImageResource(R.drawable.box_gallery);
+
+//	    		Toast.makeText(getBaseContext(), "Cannot go forward due to connectivity error! ", Toast.LENGTH_LONG).show();
+	    	}
+	    	  
+
+	    }
+	}		
+}
+

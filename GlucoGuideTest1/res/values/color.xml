@@ -1,0 +1,38 @@
+<resources>
+
+    <color name="textbold">#4c3f38    </color>
+    <color name="textthin">#7b7674    </color>
+    <color name="garry">#4c2e22    </color>
+    <color name="space_menu">#cccccc    </color>
+    <color name="diviler">#c0b6af	</color>
+    <color name="menu">#999999	</color>
+    <color name="selected">#D9E9F6
+	</color>
+    <color name="not_selected">#DCDCDC
+	</color>
+    <color name="list_row_bg">#DCDCDC
+	</color>	
+    <color name="divider">#E2E2E2
+	</color>
+    <color name="menu_normal">#ffFFFFFF</color>
+	<color name="menu_focused">#ff097400</color>
+	<color name="menu_pressed">#ffD9E9F6</color>	
+	
+	<color name="transparent_blue">#5068A7D0</color>	
+	<color name="orange">#ff5500</color>
+	<color name="white">#ffffff</color>
+	<color name="transparent">#00000000</color>
+	<color name="date_color">#999999</color>
+	<color name="black">#000000</color>
+	<color name="gray">#999999</color>
+	<color name="blue">#0066cc</color>
+	<color name="purple">#5C3976</color>
+	<color name="gold">#e6b121</color>
+	<color name="blueback">#99FFFF</color>
+	<color name="articlecolor">#3399FF</color> 
+	<color name="article_title">#3399FF</color> 
+	<color name="cachecolor">#8ad0e8</color>
+	<color name="light_blue">#68A7D0</color>
+	<color name="back_ground_ivory">#F1F0EB</color> 
+	<color name="dark_chocolate">#56544C </color> 		
+</resources>
